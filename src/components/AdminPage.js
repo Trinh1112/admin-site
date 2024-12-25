@@ -8,7 +8,9 @@ const AdminPage = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false); // Trạng thái đăng nhập
     const [trips, setTrips] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false); // Trạng thái hiển thị hộp thoại xác nhận xóa
     const [selectedTrip, setSelectedTrip] = useState(null);
+    const [tripToDelete, setTripToDelete] = useState(null); // Trip đang được chọn để xóa
     const [formData, setFormData] = useState({
         tripName: "",
         time: "",
@@ -20,7 +22,7 @@ const AdminPage = () => {
 
     const apiBaseUrl = "https://cloud-server-5ifq.onrender.com/api/trips";
 
-    // Lấy danh sách trips
+    // Lấy danh sách trips từ API
     useEffect(() => {
         if (isLoggedIn) {
             const fetchTrips = async () => {
@@ -35,7 +37,7 @@ const AdminPage = () => {
         }
     }, [isLoggedIn]);
 
-    // Hiển thị modal
+    // Hiển thị modal thêm/sửa trip
     const handleShowModal = (trip = null) => {
         setSelectedTrip(trip);
         setFormData(
@@ -51,13 +53,13 @@ const AdminPage = () => {
         setShowModal(true);
     };
 
-    // Đóng modal
+    // Đóng modal thêm/sửa trip
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedTrip(null);
     };
 
-    // Gửi dữ liệu (thêm hoặc sửa)
+    // Gửi dữ liệu thêm hoặc sửa trip
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -91,11 +93,19 @@ const AdminPage = () => {
         }
     };
 
-    // Xóa trip
-    const handleDelete = async (tripId) => {
+    // Hiển thị hộp thoại xác nhận xóa trip
+    const handleDeleteConfirmation = (trip) => {
+        setTripToDelete(trip);
+        setShowDeleteModal(true);
+    };
+
+    // Xác nhận xóa trip
+    const handleConfirmDelete = async () => {
         try {
-            await axios.delete(`${apiBaseUrl}/${tripId}`);
-            setTrips((prev) => prev.filter((trip) => trip._id !== tripId));
+            await axios.delete(`${apiBaseUrl}/${tripToDelete._id}`);
+            setTrips((prev) => prev.filter((trip) => trip._id !== tripToDelete._id));
+            setShowDeleteModal(false); // Đóng hộp thoại xác nhận
+            setTripToDelete(null); // Xóa trip khỏi trạng thái
         } catch (error) {
             console.error("Lỗi khi xóa trip:", error);
         }
@@ -150,7 +160,7 @@ const AdminPage = () => {
                                         </Button>
                                         <Button
                                             variant="danger"
-                                            onClick={() => handleDelete(trip._id)}
+                                            onClick={() => handleDeleteConfirmation(trip)}
                                         >
                                             Xóa
                                         </Button>
@@ -160,7 +170,7 @@ const AdminPage = () => {
                         </tbody>
                     </Table>
 
-                    {/* Modal */}
+                    {/* Modal thêm/sửa trip */}
                     <Modal show={showModal} onHide={handleCloseModal}>
                         <Modal.Header closeButton>
                             <Modal.Title>
@@ -238,6 +248,35 @@ const AdminPage = () => {
                                 </Button>
                             </Form>
                         </Modal.Body>
+                    </Modal>
+
+                    {/* Modal xác nhận xóa */}
+                    <Modal
+                        show={showDeleteModal}
+                        onHide={() => setShowDeleteModal(false)}
+                        centered
+                    >
+                        <Modal.Header closeButton>
+                            <Modal.Title>Xác nhận xóa</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            Bạn có chắc chắn muốn xóa chuyến đi{" "}
+                            <strong>{tripToDelete?.tripName}</strong> không?
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={handleConfirmDelete}
+                            >
+                                Xóa
+                            </Button>
+                        </Modal.Footer>
                     </Modal>
                 </>
             )}
